@@ -1,0 +1,64 @@
+name: 'YepCode Copy Team GitHub Action'
+description: 'This action syncs YepCode teams by copying resources from the current git repository to another YepCode remote team.'
+author: 'YepCode Team (developers@yepcode.io)'
+inputs:
+  teamSlug:
+    description: |
+      Remote team slug to push contents. It may be a single string (for https://cloud.yepcode.io teams), or a full URL (for on-premise teams)
+    required: true
+  clientId:
+    description: |
+      Team auth Client ID (for oauth, to be used with Client Secret)
+  clientSecret:
+    description: |
+      Team auth Client ID Client Secret (for oauth, to be used with Client ID)
+  email:
+    description: |
+      Team auth Email (to be used wi th password)
+  password:
+    description: |
+      Team auth Password (to be used with email)
+  updateMetadataWithNewRemote:
+    description: |
+      It 'true', the action will perform a commit in the current repo with the changes in the .'yepcode.json' metadata file. This will allow then to check sync status agains this remote.
+    required: false
+    default: "false"
+runs:
+  using: "composite"
+  steps:
+  - name: Checkout code
+    uses: actions/checkout@v4
+    with:
+      ref: ${{ github.head_ref }}
+  - name: Use Node 20
+    uses: actions/setup-node@v4
+    with:
+      node-version: '20.12'
+  - name: Install YepCode CLI
+    shell: bash
+    run: npm install -g @yepcode/cli
+  - name: YepCode Login
+    run: |
+      URL=`echo ${{ inputs.teamSlug }} | grep -Eo '(https?://[^ >]+)/' | head -1 || true`
+      clientId=${{ inputs.clientId }}
+      clientSecret=${{ inputs.clientSecret }}
+      email=${{ inputs.email }}
+      password=${{ inputs.password }}
+      `echo yepcode login ${URL:+-u $URL} ${clientId:+-c $clientId} ${clientSecret:+-s $clientSecret} ${email:+-e $email} ${password:+-p $password}`
+    shell: bash
+  - name: YepCode Push
+    shell: bash
+    run: |
+      yepcode remote:add ${{ inputs.teamSlug }}
+      yepcode add
+      yepcode push --force
+  - if: ${{ inputs.updateMetadataWithNewRemote == 'true' }}
+    name: Update repo with .yepcode.json changes
+    uses: yepcode/git-auto-commit-action@v5
+    with:
+      commit_message: (Automated) Update .yepcode.json after YepCode Copy Team to ${{ inputs.teamSlug }}
+      file_pattern: '.yepcode.json'
+      repository: .
+branding:
+  icon: 'download'
+  color: 'blue'
