@@ -24,6 +24,10 @@ inputs:
   password:
     description: |
       team auth Password (to be used with email)
+  authUrl:
+    description: |
+      YepCode Auth endpoint (including realm, ie: https://cloud.yepcode.io/auth/realms/yepcode). Only needed if auth domain is different than used cloud endpoint
+    required: false
   updateMetadataWithNewRemote:
     description: |
       It 'true', the action will perform a commit in the current repo with the changes in the .'yepcode.json' metadata file. This will allow then to check sync status agains this remote.
